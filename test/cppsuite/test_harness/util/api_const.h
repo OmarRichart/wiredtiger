@@ -77,9 +77,9 @@ extern const std::string STABLE_TS;
 extern const std::string STATISTICS_LOG;
 
 /*
- * Use the Snappy compressor for stress testing to avoid excessive disk space usage. Our builds
- * can pre-specify 'EXTSUBPATH' to indicate any special sub-directories the module is located. If
- * unset we fallback to the '.libs' sub-directory used by autoconf.
+ * Use the Snappy compressor for stress testing to avoid excessive disk space usage. Our builds can
+ * pre-specify 'EXTSUBPATH' to indicate any special sub-directories the module is located. If unset
+ * we fallback to the '.libs' sub-directory used by autoconf.
  */
 #define BLKCMP_PFX "block_compressor="
 #define SNAPPY_BLK BLKCMP_PFX "snappy"
