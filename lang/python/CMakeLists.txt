@@ -40,6 +40,7 @@ endif()
 
 set(python_libs)
 set(python_version)
+set(python_executable)
 
 set(required_version)
 if(PYTHON3_REQUIRED_VERSION)
@@ -62,11 +63,13 @@ if("${CMAKE_VERSION}" VERSION_LESS "3.12.0")
     include_directories(${PYTHON_INCLUDE_DIRS})
     set(python_libs ${PYTHON_LIBRARIES})
     set(python_version ${PYTHON_VERSION_STRING})
+    set(python_executable ${PYTHON_EXECUTABLE})
 else()
     find_package(Python3 ${required_version} COMPONENTS Interpreter Development REQUIRED)
     include_directories(${Python3_INCLUDE_DIRS})
     set(python_libs ${Python3_LIBRARIES})
     set(python_version ${Python3_VERSION})
+    set(python_executable ${Python3_EXECUTABLE})
 endif()
 
 # Manually specify the interface name '_wiredtiger' over a generated name.
@@ -188,3 +191,10 @@ set_target_properties(${swig_wt_target} PROPERTIES OUTPUT_NAME "_wiredtiger")
 if(WT_DARWIN)
     set_target_properties(${swig_wt_target} PROPERTIES SUFFIX ".so")
 endif()
+
+# Define a simple smoke test to check the Python API can be used.
+add_test(NAME test_ex_access
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
+        ${python_executable} -S ${CMAKE_SOURCE_DIR}/examples/python/ex_access.py
+)
+set_tests_properties(test_ex_access PROPERTIES LABELS "check")
