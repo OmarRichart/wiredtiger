@@ -833,6 +833,17 @@ tasks:
 
   # Start of normal make check test tasks
 
+  - name: lang-python-test
+    tags: ["pull_request", "python"]
+    depends_on:
+      - name: compile
+    commands:
+      - func: "fetch artifacts"
+      - func: "compile wiredtiger"
+      - func: "make check directory"
+        vars:
+          directory: lang/python
+
   - name: examples-c-test
     tags: ["pull_request"]
     depends_on:
