@@ -128,6 +128,15 @@ set(ubsan_link_flags "-fsanitize=undefined")
 set(ubsan_compiler_c_flag "-fsanitize=undefined")
 set(ubsan_compiler_cxx_flag "-fsanitize=undefined")
 
+# MSAN build variant flags.
+set(msan_link_flags "-fsanitize=memory")
+set(msan_compiler_c_flag "-fsanitize=memory" "-fno-optimize-sibling-calls")
+
+# TSAN build variant flags.
+set(tsan_link_flags "-fsanitize=thread")
+set(tsan_compiler_c_flag "-fsanitize=thread")
+set(tsan_compiler_cxx_flag "-fsanitize=thread")
+
 # Define our custom build variants.
 define_build_mode(ASan
     C_COMPILER_FLAGS ${asan_compiler_c_flag}
@@ -140,6 +149,23 @@ define_build_mode(UBSan
     CXX_COMPILER_FLAGS ${ubsan_compiler_cxx_flag} ${no_omit_frame_flag}
     LINK_FLAGS ${ubsan_link_flags}
     # Disable UBSan on MSVC compilers (unsupported).
+    DEPENDS "NOT MSVC"
+)
+
+define_build_mode(MSan
+    C_COMPILER_FLAGS ${msan_compiler_c_flag} ${no_omit_frame_flag}
+    #  We don't compile C++ for memory sanitized testing as it creates false positives.
+    CXX_COMPILER_FLAGS ""
+    LINK_FLAGS ${msan_link_flags}
+    # Disable MSan on MSVC and GNU compilers (unsupported).
+    DEPENDS "CLANG_C_COMPILER"
+)
+
+define_build_mode(TSan
+    C_COMPILER_FLAGS ${tsan_compiler_c_flag} ${no_omit_frame_flag}
+    CXX_COMPILER_FLAGS ${tsan_compiler_cxx_flag}
+    LINK_FLAGS ${tsan_link_flags}
+    # Disable TSan on MSVC compilers (unsupported).
     DEPENDS "NOT MSVC"
 )
 
