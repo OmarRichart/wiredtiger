@@ -16,7 +16,7 @@ options="-DHAVE_DIAGNOSTIC=1
 -DENABLE_SNAPPY=1 -DENABLE_ZLIB=1 -DENABLE_LZ4=1
 -DHAVE_BUILTIN_EXTENSION_LZ4=1 -DHAVE_BUILTIN_EXTENSION_SNAPPY=1 -DHAVE_BUILTIN_EXTENSION_ZLIB=1
 -DHAVE_DIAGNOSTIC=1-DENABLE_PYTHON=1
--DENABLE_STRICT=1 -DENABLE_STATIC=1 -DENABLE_SHARED=0"
+-DENABLE_STRICT=1 -DENABLE_STATIC=1 -DENABLE_SHARED=0 -DWITH_PIC=1"
 
 saved_IFS=$IFS
 cr_IFS="
@@ -33,7 +33,8 @@ BuildTest() {
         eval ninja || return 1
         ninja examples/c/all > /dev/null || return 1
         eval ninja install || return 1
-        cflags=`pkg-config wiredtiger --cflags --libs`
+        (echo $2 | grep "ENABLE_SHARED=0") && wt_build="--static" || wt_build=""
+        cflags=`pkg-config wiredtiger $wt_build --cflags --libs`
         [ "$1"  == *"clang.cmake"* ] && compiler="clang" || compiler="cc"
         echo $compiler -o ./smoke ../examples/c/ex_smoke.c $cflags
         $compiler -o ./smoke ../examples/c/ex_smoke.c  $cflags|| return 1
