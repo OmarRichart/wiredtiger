@@ -219,11 +219,11 @@ functions:
           set -o errexit
           set -o verbose
           if [ "$OS" != "Windows_NT" ]; then
+            . test/evergreen/find_cmake.sh
             if [ -d cmake_build ]; then rm -r cmake_build; fi
             mkdir -p cmake_build
             cd cmake_build
-            . test/evergreen/find_cmake.sh
-            $CMAKE -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mongodbtoolchain_v3_clang.cmake -DCMAKE_C_CFLAGS="-ggdb" -DWITH_PIC=1 \
+            $CMAKE -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mongodbtoolchain_v3_clang.cmake -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1 \
               -DHAVE_DIAGNOSTIC=1 -DCMAKE_BUILD_TYPE=ASan \
               -DHAVE_BUILTIN_EXTENSION_LZ4=1 -DHAVE_BUILTIN_EXTENSION_SNAPPY=1 -DHAVE_BUILTIN_EXTENSION_ZLIB=1 ${configure_python_setting|} \
               -G "${cmake_generator|Ninja}" ../.
@@ -238,11 +238,11 @@ functions:
           set -o errexit
           set -o verbose
           if [ "$OS" != "Windows_NT" ]; then
-            if [ -d cmake_build ]; then rm -r cmake_build; fi
+            . test/evergreen/find_cmake.sh
+          if [ -d cmake_build ]; then rm -r cmake_build; fi
             mkdir -p cmake_build
             cd cmake_build
-            . test/evergreen/find_cmake.sh
-            $CMAKE -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mongodbtoolchain_v3_gcc.cmake -DCMAKE_C_CFLAGS="-ggdb" -DWITH_PIC=1 \
+            $CMAKE -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mongodbtoolchain_v3_gcc.cmake -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1 \
               -DHAVE_DIAGNOSTIC=1 -DENABLE_STRICT=1  \
               -DHAVE_BUILTIN_EXTENSION_LZ4=1 -DHAVE_BUILTIN_EXTENSION_SNAPPY=1 -DHAVE_BUILTIN_EXTENSION_ZLIB=1 ${configure_python_setting|} \
               -G "${cmake_generator|Ninja}" ../.
@@ -797,13 +797,13 @@ tasks:
       - func: "get project"
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=7 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=7 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=8 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=8 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=9 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/gcc.cmake -DGCC_VERSION=9 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
 
   - name: compile-clang
     tags: ["pull_request", "pull_request_compilers"]
@@ -811,13 +811,13 @@ tasks:
       - func: "get project"
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=6 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=6.0 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=7 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=7 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=8 CMAKE_C_FLAGS="-ggdb -fPIC"
+          posix_configure_flags: -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/clang.cmake -DCLANG_VERSION=8 -DCMAKE_C_FLAGS="-ggdb" -DWITH_PIC=1
 
   - name: make-check-test
     depends_on:
@@ -3701,7 +3701,8 @@ buildvariants:
   - ubuntu2004-test
   expansions:
     smp_command: -j $(grep -c ^processor /proc/cpuinfo)
-    make_command: PATH=/opt/mongodbtoolchain/v3/bin:$PATH make
+    make_command: ninja
+    is_cmake_build: true
     test_env_vars:
       LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libeatmydata.so
       PATH=/opt/mongodbtoolchain/v3/bin:$PATH
