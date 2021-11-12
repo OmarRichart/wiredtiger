@@ -355,7 +355,7 @@ functions:
         set -o verbose
         . test/evergreen/find_cmake.sh
         cd cmake_build
-        ${test_env_vars|} $CTEST -L check --test-dir ${directory} ${smp_command|} --output-on-failure 2>&1
+        ${test_env_vars|} (cd ${directory};$CTEST ${smp_command|} --output-on-failure) 2>&1
   "make check all":
     command: shell.exec
     params:
@@ -461,7 +461,7 @@ functions:
   "recovery stress test script":
     command: shell.exec
     params:
-      working_dir: "wiredtiger/build_posix/test/csuite"
+      working_dir: "wiredtiger/cmake_build/test/csuite"
       script: |
         set -o errexit
         set -o verbose
@@ -731,7 +731,7 @@ variables:
       - func: "get project"
       - func: "compile wiredtiger"
         vars:
-          posix_configure_flags: --enable-strict --enable-diagnostic --with-builtins=lz4,snappy,zlib
+          posix_configure_flags: -DENABLE_STRICT=1 -DHAVE_DIAGNOSTIC=1 -DHAVE_BUILTIN_EXTENSION_LZ4=1 -DHAVE_BUILTIN_EXTENSION_SNAPPY=1 -DHAVE_BUILTIN_EXTENSION_ZLIB=1
       - func: "recovery stress test script"
         vars:
           times: 25
@@ -2740,7 +2740,6 @@ tasks:
           times: 1       # No of times to run the loop
           no_of_procs: 10 # No of processes to run in the background
 
-  # TODO: Compilation for workgen.
   - name: split-stress-test
     tags: ["stress-test-1", "stress-test-zseries-1"]
     commands:
@@ -3706,9 +3705,9 @@ buildvariants:
     test_env_vars:
       LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libeatmydata.so
       PATH=/opt/mongodbtoolchain/v3/bin:$PATH
-      top_dir=$(git rev-parse --show-toplevel)
-      top_builddir=$top_dir/build_posix
-      LD_LIBRARY_PATH=$top_builddir/.libs:$top_dir/TCMALLOC_LIB/lib
+      WT_TOPDIR=$(git rev-parse --show-toplevel)
+      WT_BUILDDIR=$WT_TOPDIR/cmake_build
+      LD_LIBRARY_PATH=$WT_BUILDDIR:$WT_TOPDIR/TCMALLOC_LIB/lib
     posix_configure_flags:
       -DHAVE_DIAGNOSTIC=1
       -DENABLE_PYTHON=1
