@@ -355,7 +355,7 @@ functions:
         set -o verbose
         . test/evergreen/find_cmake.sh
         cd cmake_build
-        ${test_env_vars|} (cd ${directory};$CTEST ${smp_command|} --output-on-failure) 2>&1
+        ${test_env_vars|} cd ${directory};$CTEST ${smp_command|} --output-on-failure 2>&1
   "make check all":
     command: shell.exec
     params:
@@ -445,7 +445,7 @@ functions:
   "timestamp abort test":
     command: shell.exec
     params:
-      working_dir: "wiredtiger/build_posix/test/csuite"
+      working_dir: "wiredtiger/cmake_build/test/csuite/timestamp_abort"
       script: |
         set -o errexit
         set -o verbose
@@ -476,22 +476,22 @@ functions:
           fi
 
           # Run current version with write-no-sync txns.
-          ${test_env_vars|} ./test_random_abort 2>&1
-          ${test_env_vars|} ./test_timestamp_abort $test_timestamp_abort_args 2>&1
+          ${test_env_vars|} ./random_abort/test_random_abort 2>&1
+          ${test_env_vars|} ./timestamp_abort/test_timestamp_abort $test_timestamp_abort_args 2>&1
 
           # Current version with memory-based txns (MongoDB usage).
-          ${test_env_vars|} ./test_random_abort -m 2>&1
-          ${test_env_vars|} ./test_timestamp_abort -m $test_timestamp_abort_args 2>&1
+          ${test_env_vars|} ./random_abort/test_random_abort -m 2>&1
+          ${test_env_vars|} ./timestamp_abort/test_timestamp_abort -m $test_timestamp_abort_args 2>&1
 
           # V1 log compatibility mode with write-no-sync txns.
-          ${test_env_vars|} ./test_random_abort -C 2>&1
-          ${test_env_vars|} ./test_timestamp_abort -C $test_timestamp_abort_args 2>&1
+          ${test_env_vars|} ./random_abort/test_random_abort -C 2>&1
+          ${test_env_vars|} ./timestamp_abort/test_timestamp_abort -C $test_timestamp_abort_args 2>&1
 
           # V1 log compatibility mode with memory-based txns.
-          ${test_env_vars|} ./test_random_abort -C -m 2>&1
-          ${test_env_vars|} ./test_timestamp_abort -C -m $test_timestamp_abort_args 2>&1
+          ${test_env_vars|} ./random_abort/test_random_abort -C -m 2>&1
+          ${test_env_vars|} ./timestamp_abort/test_timestamp_abort -C -m $test_timestamp_abort_args 2>&1
 
-          ${test_env_vars|} ./test_truncated_log ${truncated_log_args|} 2>&1
+          ${test_env_vars|} ./truncated_log/test_truncated_log ${truncated_log_args|} 2>&1
 
           # Just let the system take a breath
           sleep 10s
@@ -523,7 +523,7 @@ functions:
   "run wt hang analyzer":
     command: shell.exec
     params:
-      working_dir: "wiredtiger/build_posix"
+      working_dir: "wiredtiger/cmake_build"
       script: |
         set -o verbose
 
@@ -537,7 +537,7 @@ functions:
     - command: archive.targz_pack
       params:
         target: "wt-hang-analyzer.tgz"
-        source_dir: "wiredtiger/build_posix"
+        source_dir: "wiredtiger/cmake_build"
         include:
           - "./*core*"
           - "./debugger*.*"
@@ -555,7 +555,7 @@ functions:
   "dump stderr/stdout":
     command: shell.exec
     params:
-      working_dir: "wiredtiger/build_posix"
+      working_dir: "wiredtiger/cmake_build"
       script: |
         set -o errexit
         set -o verbose
@@ -3960,7 +3960,8 @@ buildvariants:
   tasks:
     - name: compile
     - name: make-check-test
-    - name: unit-test
+    - name: ".unit_test"
+    - name: fops
 
 - name: macos-1014
   display_name: OS X 10.14
@@ -4016,6 +4017,7 @@ buildvariants:
     - name: compile
     - name: make-check-test
     - name: unit-test
+    - name: fops
 
 - name: little-endian
   display_name: "~ Little-endian (x86)"
