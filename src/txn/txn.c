@@ -1994,6 +1994,9 @@ __wt_txn_prepare(WT_SESSION_IMPL *session, const char *cfg[])
         WT_RET(__wt_session_copy_values(session));
     }
 
+    /* Disable resolution of weak hazard pointer for prepared transactions. */
+    txn->resolve_weak_hazard_updates = false;
+
     for (i = 0, op = txn->mod; i < txn->mod_count; i++, op++) {
         /* Assert it's not an update to the history store file. */
         WT_ASSERT(session, S2C(session)->cache->hs_fileid == 0 || !WT_IS_HS(op->btree->dhandle));
@@ -2264,7 +2267,7 @@ __wt_txn_init(WT_SESSION_IMPL *session, WT_SESSION_IMPL *session_ret)
      * Take care to clean these out in case we are reusing the transaction for eviction.
      */
     txn->mod = NULL;
-
+    txn->resolve_weak_hazard_updates = true;
     txn->isolation = session_ret->isolation;
     return (0);
 }

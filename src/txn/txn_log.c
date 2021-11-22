@@ -267,6 +267,16 @@ __wt_txn_log_op(WT_SESSION_IMPL *session, WT_CURSOR_BTREE *cbt)
     op = txn->mod + txn->mod_count - 1;
     fileid = op->btree->id;
 
+    /*
+     * If there are older updates to this key by the same transaction, disable resolution of updates
+     * from the weak hazard pointer associated with the modification. Currently it is unsupported
+     * behavior.
+     */
+    if ((op->type == WT_TXN_OP_BASIC_COL || op->type == WT_TXN_OP_INMEM_COL ||
+          op->type == WT_TXN_OP_BASIC_ROW || op->type == WT_TXN_OP_INMEM_ROW) &&
+      op->u.op_upd != NULL && op->u.op_upd->next != NULL && op->u.op_upd->next->txnid == txn->id)
+        txn->resolve_weak_hazard_updates = false;
+
     /* Set the weak hazard pointer for this update. */
     if ((op->type == WT_TXN_OP_BASIC_ROW || op->type == WT_TXN_OP_INMEM_ROW)) {
         if (!WT_IS_METADATA(op->btree->dhandle)) {

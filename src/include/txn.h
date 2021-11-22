@@ -306,6 +306,12 @@ struct __wt_txn {
 
     const char *rollback_reason; /* If rollback, the reason */
 
+    /*
+     * Whether or not to resolve uncommitted updates from their weak hazard pointers in commit or
+     * rollback.
+     */
+    bool resolve_weak_hazard_updates;
+
 /*
  * WT_TXN_HAS_TS_COMMIT --
  *	The transaction has a set commit timestamp.
