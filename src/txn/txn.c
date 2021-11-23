@@ -1610,6 +1610,43 @@ __txn_mod_compare(const void *a, const void *b)
 }
 
 /*
+ * __txn_resolve_weak_hazard_update --
+ *     Resolve the update pointed to by the weak hazard pointer.
+ */
+static int
+__txn_resolve_weak_hazard_update(
+  WT_SESSION_IMPL *session, WT_TXN_OP *op, WT_UPDATE **updp, WT_REF **refp)
+{
+    WT_CURSOR *cursor;
+    WT_DECL_RET;
+
+    cursor = NULL;
+
+    /*
+     * Resolve the associated update using the weak hazard pointer. Attempt to upgrade it to a full
+     * hazard pointer.
+     *
+     * We need to pass the btree here as this call may check flags on the btree.
+     */
+    WT_WITH_BTREE(session, op->btree, ret = __wt_hazard_weak_upgrade(session, &op->whp, refp));
+
+    if (ret == EBUSY) {
+        /* We failed to upgrade the weak pointer, go searching for the update. */
+        WT_WITH_BTREE(
+          session, op->btree, ret = __txn_search_prepared_op(session, op, &cursor, updp));
+        WT_RET(ret);
+        WT_ASSERT(session, *updp == op->u.op_upd);
+    } else if (ret == 0) {
+        /*
+         * The weak hazard pointer was still valid we can grab the update off the mod structure.
+         */
+        *updp = op->u.op_upd;
+    }
+
+    return (ret);
+}
+
+/*
  * __wt_txn_commit --
  *     Commit the current transaction.
  */
@@ -1773,35 +1810,11 @@ __wt_txn_commit(WT_SESSION_IMPL *session, const char *cfg[])
         case WT_TXN_OP_INMEM_ROW:
             if (txn->resolve_weak_hazard_updates && op->whp != NULL) {
                 resolved_updates = true;
-                /*
-                 * Resolve the associated update using the weak hazard pointer. Attempt to upgrade
-                 * it to a full hazard pointer.
-                 *
-                 * We need to pass the btree here as this call may check flags on the btree.
-                 */
-                WT_WITH_BTREE(
-                  session, op->btree, ret = __wt_hazard_weak_upgrade(session, &op->whp, &ref));
-                if (ret == EBUSY) {
-                    /* We failed to upgrade the weak pointer, go searching for the update. */
-                    WT_WITH_BTREE(session, op->btree,
-                      ret = __txn_search_prepared_op(session, op, &cursor, &upd));
-                    WT_ERR(ret);
-                    WT_ASSERT(session, upd == op->u.op_upd);
-                } else if (ret == 0) {
-                    /*
-                     * The weak hazard pointer was still valid we can grab the update off the mod
-                     * structure.
-                     */
-                    upd = op->u.op_upd;
-                } else {
-                    WT_ERR(ret);
-                }
-
+                WT_ERR(__txn_resolve_weak_hazard_update(session, op, &upd, &ref));
             } else {
                 WT_ASSERT(session,
                   !txn->resolve_weak_hazard_updates || op->u.op_upd->type == WT_UPDATE_RESERVE ||
-                    WT_IS_METADATA(
-                      op->btree->dhandle) || F_ISSET(op->btree, WT_BTREE_IN_MEMORY));
+                    WT_IS_METADATA(op->btree->dhandle) || F_ISSET(op->btree, WT_BTREE_IN_MEMORY));
 standard_commit:
                 upd = op->u.op_upd;
             }
